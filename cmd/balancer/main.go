@@ -8,10 +8,12 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 )
 
 var (
-	port = flag.Int("port", 8080, "Port to listen on")
+	port       = flag.Int("port", 8080, "Port to listen on")
+	confgiFile = flag.String("config-path", "", "Path to config file")
 )
 
 type Balancer struct {
@@ -60,20 +62,19 @@ func (b *Balancer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func main() {
 	flag.Parse()
 
-	services := make([]config.Service, 0)
-
-	services = append(services, config.Service{
-		Name: "Test",
-		Replicas: []string{
-			"http://127.0.0.1:8081",
-			"http://127.0.0.1:8082",
-		},
-	})
-
-	conf := &config.Config{
-		Services: services,
-		Strategy: "RoundRobin",
+	file, err := os.Open(*confgiFile)
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	config, err := config.LoadConfig(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("%+v\n", config)
+
+	conf := config
 
 	loadBalancer := NewBalancer(conf)
 	server := http.Server{
