@@ -7,15 +7,15 @@ import (
 )
 
 type Service struct {
-	Name     string   // name of the serive
-	Replicas []string // replicas of the service like all the ips of the service
+	Name     string   `yaml:"name"`     // name of the serive
+	Replicas []string `yaml:"replicas"` // replicas of the service like all the ips of the service
 }
 
 // Config is a representation of the configuration given to load balancer from a config source
 type Config struct {
-	Services []Service
+	Services []Service `yaml:"services"`
 
-	Strategy string // Name of the strategy for load balancing between the replicas
+	Strategy string `yaml:"strategy"` // Name of the strategy for load balancing between the replicas
 }
 
 // Server is an instance of a running server
