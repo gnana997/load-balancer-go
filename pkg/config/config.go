@@ -7,7 +7,9 @@ import (
 )
 
 type Service struct {
-	Name     string   `yaml:"name"`     // name of the serive
+	Name string `yaml:"name"` // name of the serive
+	// can be subdomain or regex
+	Matcher  string   `yaml:"matcher"`  // prefix of the url to match the service
 	Replicas []string `yaml:"replicas"` // replicas of the service like all the ips of the service
 }
 

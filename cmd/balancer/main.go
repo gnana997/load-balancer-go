@@ -9,6 +9,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strings"
 )
 
 var (
@@ -22,6 +23,7 @@ type Balancer struct {
 }
 
 func NewBalancer(cfg *config.Config) *Balancer {
+	// TODO: prevent multiple or invalid matchers before creating the server list
 	serverLists := make(map[string]*config.ServerList)
 	for _, service := range cfg.Services {
 		serverList := &config.ServerList{
@@ -37,7 +39,7 @@ func NewBalancer(cfg *config.Config) *Balancer {
 				Proxy: httputil.NewSingleHostReverseProxy(url),
 			})
 		}
-		serverLists[service.Name] = serverList
+		serverLists[service.Matcher] = serverList
 	}
 
 	return &Balancer{
@@ -46,12 +48,23 @@ func NewBalancer(cfg *config.Config) *Balancer {
 	}
 }
 
+func (b *Balancer) findServiceList(path string) (*config.ServerList, error) {
+	fmt.Printf("Finding service for path %s\n", path)
+	for matcher, serverList := range b.ServerLists {
+		if strings.HasPrefix(path, matcher) {
+			return serverList, nil
+		}
+	}
+	return nil, fmt.Errorf("no service found for path %s", path)
+}
+
 func (b *Balancer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//TODO: Implement strategy per Service forwading
 	fmt.Printf("Recieved request %s\n", r.Host)
-	sl, ok := b.ServerLists["Test"]
-	if !ok {
+	sl, err := b.findServiceList(r.URL.Path)
+	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(fmt.Sprintf("Not Found Error: %s", err)))
 		return
 	}
 	next := sl.Next()
