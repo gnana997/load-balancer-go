@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"gnana997/load-balancer-go/pkg/config"
+	"gnana997/load-balancer-go/pkg/domain"
+	"gnana997/load-balancer-go/pkg/strategy"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -19,22 +21,30 @@ var (
 
 type Balancer struct {
 	Config      *config.Config
-	ServerLists map[string]*config.ServerList
+	ServerLists map[string]*strategy.ServerList
 }
 
 func NewBalancer(cfg *config.Config) *Balancer {
 	// TODO: prevent multiple or invalid matchers before creating the server list
-	serverLists := make(map[string]*config.ServerList)
+	serverLists := make(map[string]*strategy.ServerList)
 	for _, service := range cfg.Services {
-		serverList := &config.ServerList{
-			Servers: make([]*config.Server, 0),
+		balancingStrategy := strategy.FetchStrategy(func(name string) strategy.BalacingStrategy {
+			fmt.Printf("Fetching strategy %s\n", name)
+			return &strategy.RoundRobin{
+				Offset: 0,
+			}
+		})(service.Strategy)
+
+		serverList := &strategy.ServerList{
+			Servers:  make([]*domain.Server, 0),
+			Strategy: balancingStrategy,
 		}
 		for _, replica := range service.Replicas {
 			url, err := url.Parse(replica)
 			if err != nil {
 				log.Fatal(err)
 			}
-			serverList.Servers = append(serverList.Servers, &config.Server{
+			serverList.Servers = append(serverList.Servers, &domain.Server{
 				Url:   url,
 				Proxy: httputil.NewSingleHostReverseProxy(url),
 			})
@@ -48,7 +58,7 @@ func NewBalancer(cfg *config.Config) *Balancer {
 	}
 }
 
-func (b *Balancer) findServiceList(path string) (*config.ServerList, error) {
+func (b *Balancer) findServiceList(path string) (*strategy.ServerList, error) {
 	fmt.Printf("Finding service for path %s\n", path)
 	for matcher, serverList := range b.ServerLists {
 		if strings.HasPrefix(path, matcher) {
@@ -67,9 +77,14 @@ func (b *Balancer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(fmt.Sprintf("Not Found Error: %s", err)))
 		return
 	}
-	next := sl.Next()
-	fmt.Printf("Forwarding request to %s\n", sl.Servers[next].Url.Host)
-	sl.Servers[next].Proxy.ServeHTTP(w, r)
+	next, err := sl.Strategy.Next(sl.Servers)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(fmt.Sprintf("Error occured while choosing server: %s", err)))
+		return
+	}
+	fmt.Printf("Forwarding request to %s\n", next.Url.Host)
+	next.Proxy.ServeHTTP(w, r)
 }
 
 func main() {

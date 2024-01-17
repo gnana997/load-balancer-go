@@ -2,7 +2,15 @@ services:
   -
     name: "Test"
     matcher: "/api/v1"
+    strategy: "RoundRobin"
     replicas:
       - "http://localhost:8081"
       - "http://localhost:8082"
-strategy: "RoundRobin"
+  -
+    name: "Test2"
+    matcher: "/api/v2"
+    strategy: "RoundRobin"
+    replicas:
+      - "http://localhost:8083"
+      - "http://localhost:8084"
+defaultStrategy: "RoundRobin"
