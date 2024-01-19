@@ -28,19 +28,13 @@ func NewBalancer(cfg *config.Config) *Balancer {
 	// TODO: prevent multiple or invalid matchers before creating the server list
 	serverLists := make(map[string]*strategy.ServerList)
 	for _, service := range cfg.Services {
-		balancingStrategy := strategy.FetchStrategy(func(name string) strategy.BalacingStrategy {
-			fmt.Printf("Fetching strategy %s\n", name)
-			return &strategy.RoundRobin{
-				Offset: 0,
-			}
-		})(service.Strategy)
 
 		serverList := &strategy.ServerList{
 			Servers:  make([]*domain.Server, 0),
-			Strategy: balancingStrategy,
+			Strategy: strategy.LoadStrategy(service.Strategy),
 		}
 		for _, replica := range service.Replicas {
-			url, err := url.Parse(replica)
+			url, err := url.Parse(replica.Host)
 			if err != nil {
 				log.Fatal(err)
 			}

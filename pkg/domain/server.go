@@ -11,10 +11,15 @@ type Server struct {
 	Proxy *httputil.ReverseProxy
 }
 
+type Replica struct {
+	Host   string `yaml:"host"`
+	Weight int    `yaml:"weight"`
+}
+
 type Service struct {
 	Name string `yaml:"name"` // name of the serive
 	// can be subdomain or regex
-	Matcher  string   `yaml:"matcher"`  // prefix of the url to match the service
-	Replicas []string `yaml:"replicas"` // replicas of the service like all the ips of the service
-	Strategy string   `yaml:"strategy"` // name of the strategy for load balancing between the replicas
+	Matcher  string    `yaml:"matcher"`  // prefix of the url to match the service
+	Replicas []Replica `yaml:"replicas"` // replicas of the service like all the ips of the service
+	Strategy string    `yaml:"strategy"` // name of the strategy for load balancing between the replicas
 }
