@@ -1,25 +1,34 @@
 package domain
 
 import (
+	"fmt"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
 )
 
 // Server is an instance of a running server
 type Server struct {
-	Url   *url.URL
-	Proxy *httputil.ReverseProxy
+	Url      *url.URL
+	Proxy    *httputil.ReverseProxy
+	Metadata map[string]string
 }
 
-type Replica struct {
-	Host   string `yaml:"host"`
-	Weight int    `yaml:"weight"`
+func (s *Server) GetMetadataOrDefault(key string, defaultValue string) string {
+	if s.Metadata != nil {
+		if value, ok := s.Metadata[key]; ok {
+			return value
+		}
+	}
+	return defaultValue
 }
 
-type Service struct {
-	Name string `yaml:"name"` // name of the serive
-	// can be subdomain or regex
-	Matcher  string    `yaml:"matcher"`  // prefix of the url to match the service
-	Replicas []Replica `yaml:"replicas"` // replicas of the service like all the ips of the service
-	Strategy string    `yaml:"strategy"` // name of the strategy for load balancing between the replicas
+func (s *Server) GetMetadataOrDefaultInt(key string, defaultValue int) int {
+	if s.Metadata != nil {
+		value := s.GetMetadataOrDefault(key, fmt.Sprintf("%d", defaultValue))
+		if v, err := strconv.Atoi(value); err == nil {
+			return v
+		}
+	}
+	return defaultValue
 }

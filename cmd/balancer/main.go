@@ -39,8 +39,9 @@ func NewBalancer(cfg *config.Config) *Balancer {
 				log.Fatal(err)
 			}
 			serverList.Servers = append(serverList.Servers, &domain.Server{
-				Url:   url,
-				Proxy: httputil.NewSingleHostReverseProxy(url),
+				Url:      url,
+				Proxy:    httputil.NewSingleHostReverseProxy(url),
+				Metadata: replica.Metadata,
 			})
 		}
 		serverLists[service.Matcher] = serverList

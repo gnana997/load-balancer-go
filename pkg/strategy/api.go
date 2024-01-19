@@ -1,6 +1,7 @@
 package strategy
 
 import (
+	"fmt"
 	"gnana997/load-balancer-go/pkg/domain"
 )
 
@@ -29,11 +30,14 @@ func init() {
 			Offset: uint32(0),
 		}
 	}
-	// strategies[WeightedRoundRobin] = &WeightedRoundRobinStrategy{}
+	strategies[WeightedRoundRobin] = func() BalacingStrategy {
+		return &WeightedRoundRobinStrategy{}
+	}
 }
 
 func LoadStrategy(Name string) BalacingStrategy {
 	if strategy, ok := strategies[Name]; ok {
+		fmt.Printf("Recieved Name is %s", Name)
 		return strategy()
 	}
 	return strategies[RoundRobin]()

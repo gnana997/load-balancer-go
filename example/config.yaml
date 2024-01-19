@@ -2,15 +2,21 @@ services:
   -
     name: "Test"
     matcher: "/api/v1"
-    strategy: "RoundRobin"
+    strategy: "WeightedRoundRobin"
     replicas:
-      - "http://localhost:8081"
-      - "http://localhost:8082"
+      - 
+        host: "http://localhost:8081"
+        metadata:
+          weight: 10
+      - 
+        host: "http://localhost:8082"
+        metadata:
+          weight: 5
   -
     name: "Test2"
     matcher: "/api/v2"
     strategy: "RoundRobin"
     replicas:
-      - "http://localhost:8083"
-      - "http://localhost:8084"
+      - host: "http://localhost:8083"
+      - host: "http://localhost:8084"
 defaultStrategy: "RoundRobin"
