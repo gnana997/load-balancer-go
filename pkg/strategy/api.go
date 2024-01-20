@@ -30,7 +30,7 @@ func init() {
 	strategies = make(map[string]func() BalacingStrategy)
 	strategies[RoundRobin] = func() BalacingStrategy {
 		return &RoundRobinStrategy{
-			Offset: uint32(0),
+			current: 0,
 		}
 	}
 	strategies[WeightedRoundRobin] = func() BalacingStrategy {
