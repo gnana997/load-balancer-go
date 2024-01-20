@@ -3,6 +3,7 @@ package strategy
 import (
 	"fmt"
 	"gnana997/load-balancer-go/pkg/domain"
+	"gnana997/load-balancer-go/pkg/health"
 )
 
 const (
@@ -19,6 +20,8 @@ type BalacingStrategy interface {
 
 type ServerList struct {
 	Servers []*domain.Server
+
+	HC *health.HealthChecker
 
 	Strategy BalacingStrategy
 }

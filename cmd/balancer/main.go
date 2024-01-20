@@ -5,13 +5,16 @@ import (
 	"fmt"
 	"gnana997/load-balancer-go/pkg/config"
 	"gnana997/load-balancer-go/pkg/domain"
+	"gnana997/load-balancer-go/pkg/health"
 	"gnana997/load-balancer-go/pkg/strategy"
-	"log"
+
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -28,7 +31,6 @@ func NewBalancer(cfg *config.Config) *Balancer {
 	// TODO: prevent multiple or invalid matchers before creating the server list
 	serverLists := make(map[string]*strategy.ServerList)
 	for _, service := range cfg.Services {
-
 		serverList := &strategy.ServerList{
 			Servers:  make([]*domain.Server, 0),
 			Strategy: strategy.LoadStrategy(service.Strategy),
@@ -44,7 +46,16 @@ func NewBalancer(cfg *config.Config) *Balancer {
 				Metadata: replica.Metadata,
 			})
 		}
+		hc, err := health.NewChecker(cfg, serverList.Servers)
+		if err != nil {
+			log.Errorf("could not create health checker for service '%s'", service.Name)
+		}
+		serverList.HC = hc
 		serverLists[service.Matcher] = serverList
+	}
+
+	for _, sl := range serverLists {
+		go sl.HC.Start()
 	}
 
 	return &Balancer{
